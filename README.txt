@@ -1,0 +1,1 @@
+Read the presentation files to get the details of the project

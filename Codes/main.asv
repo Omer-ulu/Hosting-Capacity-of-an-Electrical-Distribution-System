@@ -1,0 +1,67 @@
+clear
+close all
+[DSSStartOK, DSSObj, DSSText] = DSSStartup;
+if DSSStartOK
+
+    DSSCircuit=DSSObj.ActiveCircuit;
+    DSSSolution=DSSCircuit.Solution;
+    DSSText.command='Compile (C:\Users\Ömer Ulu\Desktop\Hosting_Cap_Project\Codes\IEEE123Master.dss)';
+    DSSText.Command='set mode=daily stepsize=1h';
+    DSSText.Command='set controlmode=static';
+
+    DSSText.Command='RegControl.creg1a.maxtapchange=0  !Allow only one tap change per solution. This one moves first';
+    DSSText.Command='RegControl.creg2a.maxtapchange=0  !Allow only one tap change per solution';
+    DSSText.Command='RegControl.creg3a.maxtapchange=0  !Allow only one tap change per solution';
+    DSSText.Command='RegControl.creg4a.maxtapchange=0  !Allow only one tap change per solution';
+    DSSText.Command='RegControl.creg3c.maxtapchange=0  !Allow only one tap change per solution';
+    DSSText.Command='RegControl.creg4b.maxtapchange=0  !Allow only one tap change per solution';
+    DSSText.Command='RegControl.creg4c.maxtapchange=0  !Allow only one tap change per solution';
+
+
+    [PvNodecand] = CreatePVnodes_Cand();
+    MyLoads = DSSCircuit.Loads;
+    MyPVPower=0;
+    %     senario=0;
+
+    %% Add PVs to the randomly created nodes
+    for senario=1:10
+        for kk=1:125
+            DSSText.command='Compile (C:\Users\Ömer Ulu\Desktop\Hosting_Cap_Project\Codes\IEEE123Master.dss)';
+            MyPVPower=MyPVPower+20;
+            for jj=1:10
+                MyLoads.First;
+                for ii=1:PvNodecand(senario,jj)-1
+                    MyLoads.Next;
+                end
+                reactivepowertostore=MyLoads.kvar;      %Since there will be a change in Kvar due to the ratio keep it
+                MyLoads.kvar=0;
+                MyLoads.kw=MyLoads.kw-MyPVPower;           %Add the new PV power
+                MyLoads.kvar=reactivepowertostore;         %Recall the reactive power
+            end
+
+            c=1;
+            DSSCircuit.Solution.Hour = 0;
+            for ii=1:1:24
+                DSSSolution.Solve;
+                V1 = DSSCircuit.AllNodeVmagPUByPhase(1);
+                phase1max(c)=max(V1);
+                V2 = DSSCircuit.AllNodeVmagPUByPhase(2);
+                phase2max(c)=max(V2);
+                V3 = DSSCircuit.AllNodeVmagPUByPhase(3);
+                phase3max(c)=max(V3);
+                %         myarraydaily(ii,:)=DSSCircuit.AllBusVmagPu;
+                DSSCircuit.Solution.Hour = ii;
+                c=c+1;
+            end
+            plot(phase1max,'r*')
+            hold on
+            plot(phase2max,'g*')
+            hold on
+            plot(phase3max,'b*')
+            hold on
+
+        end
+    end
+end
+
+
